@@ -228,7 +228,7 @@ const SignPage: React.FC = () => {
       {/* PDF */}
       <div className="relative" style={{ lineHeight: 0 }}>
         <PDFDocument
-          file={`/uploads/${doc.filename}`}
+          file={`${import.meta.env.VITE_API_URL}/uploads/${doc.filename}`}
           onLoadSuccess={({ numPages: n }) => setNumPages(n)}
           className="rounded-lg overflow-hidden shadow-2xl"
         >
