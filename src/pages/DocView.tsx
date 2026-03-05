@@ -177,7 +177,7 @@ const DocView: React.FC = () => {
 
   if (!doc) return null
 
-  const pdfUrl = `/uploads/${doc.filename}`
+  const pdfUrl = `${import.meta.env.VITE_API_URL}/uploads/${doc.filename}`
   const statusMap: Record<string, string> = {
     draft: 'badge-draft', pending: 'badge-pending',
     signed: 'badge-signed', rejected: 'badge-rejected'
