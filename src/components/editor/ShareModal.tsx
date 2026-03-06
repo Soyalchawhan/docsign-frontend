@@ -46,7 +46,7 @@ const ShareModal: React.FC<Props> = ({ doc, onClose, onShared }) => {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg" style={{maxHeight: '90vh', overflowY: 'auto'}}>
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg" style={{height: 'auto', overflowY: 'auto'}}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-white">Share for Signing</h2>
