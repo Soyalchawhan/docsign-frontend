@@ -27,7 +27,7 @@ const ShareModal: React.FC<Props> = ({ doc, onClose, onShared }) => {
     setLoading(true)
     try {
       const res = await api.post(`/api/docs/${doc._id}/share`, { expiryDays })
-      setShareLinks(res.data.shareLinks)
+      setShareLinks(res.data.shareLinks || [])
       onShared(res.data.doc)
       toast.success('Share links generated!')
     } catch {
@@ -41,49 +41,37 @@ const ShareModal: React.FC<Props> = ({ doc, onClose, onShared }) => {
     navigator.clipboard.writeText(url)
     setCopied(url)
     setTimeout(() => setCopied(null), 2000)
+    toast.success('Link copied!')
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="card w-full max-w-lg animate-fade-up max-h-screen overflow-y-auto">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg" style={{maxHeight: '90vh', overflowY: 'auto'}}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-display text-white">Share for Signing</h2>
-            <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
+            <h2 className="text-xl font-bold text-white">Share for Signing</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
           </div>
 
-          {/* Signers list */}
           <div className="mb-4">
-            <p className="text-sm text-slate-400 mb-3">Signers ({doc.signers?.length || 0})</p>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <p className="text-sm text-slate-400 mb-2">Signers ({doc.signers?.length || 0})</p>
+            <div className="space-y-2">
               {doc.signers?.map((signer, i) => (
-                <div key={i} className="flex items-center gap-2 bg-slate-900 rounded-lg p-2.5">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    signer.status === 'signed' ? 'bg-emerald-400' :
-                    signer.status === 'rejected' ? 'bg-red-400' : 'bg-amber-400'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white truncate">{signer.name}</p>
-                    <p className="text-xs text-slate-400 truncate">{signer.email}{signer.role ? ` · ${signer.role}` : ''}</p>
+                <div key={i} className="flex items-center gap-2 bg-slate-800 rounded-lg p-2.5">
+                  <div className={`w-2 h-2 rounded-full ${signer.status === 'signed' ? 'bg-emerald-400' : signer.status === 'rejected' ? 'bg-red-400' : 'bg-amber-400'}`} />
+                  <div className="flex-1">
+                    <p className="text-sm text-white">{signer.name}</p>
+                    <p className="text-xs text-slate-400">{signer.email}{signer.role ? ` · ${signer.role}` : ''}</p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    signer.status === 'signed' ? 'bg-emerald-900/50 text-emerald-400' :
-                    signer.status === 'rejected' ? 'bg-red-900/50 text-red-400' :
-                    'bg-amber-900/50 text-amber-400'
-                  }`}>{signer.status}</span>
+                  <span className="text-xs text-slate-400">{signer.status}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Expiry */}
           <div className="mb-4">
-            <label className="label">Link expires in</label>
-            <select value={expiryDays} onChange={e => setExpiryDays(Number(e.target.value))} className="input">
+            <label className="text-sm text-slate-400 block mb-1">Link expires in</label>
+            <select value={expiryDays} onChange={e => setExpiryDays(Number(e.target.value))} className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm">
               <option value={1}>1 day</option>
               <option value={3}>3 days</option>
               <option value={7}>7 days</option>
@@ -92,38 +80,41 @@ const ShareModal: React.FC<Props> = ({ doc, onClose, onShared }) => {
             </select>
           </div>
 
-          {/* Generated links */}
+          <button onClick={handleGenerate} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2.5 font-medium mb-4 transition-colors">
+            {loading ? 'Generating...' : shareLinks.length ? 'Regenerate Links' : 'Generate Links'}
+          </button>
+
           {shareLinks.length > 0 && (
-            <div className="space-y-2 mb-4">
-              <p className="text-xs text-slate-400">Share links — send each link to the respective signer:</p>
-              {shareLinks.map((link, i) => (
-                <div key={i} className="bg-slate-950 border border-slate-700 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-white">{link.name}</span>
-                    {link.role && <span className="text-xs text-slate-400">{link.role}</span>}
+            <div>
+              <p className="text-sm font-medium text-white mb-3">✅ Share these links with each signer:</p>
+              <div className="space-y-3">
+                {shareLinks.map((link, i) => (
+                  <div key={i} className="bg-slate-800 border border-slate-600 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-white">{link.name}</span>
+                      {link.role && <span className="text-xs text-slate-400 bg-slate-700 px-2 py-0.5 rounded">{link.role}</span>}
+                    </div>
+                    <p className="text-xs text-slate-400 mb-2">{link.email}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-slate-950 rounded px-2 py-1.5 overflow-hidden">
+                        <p className="text-xs text-blue-400 font-mono truncate">{link.shareUrl}</p>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(link.shareUrl)}
+                        className={`text-xs px-3 py-1.5 rounded font-medium transition-colors flex-shrink-0 ${copied === link.shareUrl ? 'bg-emerald-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                      >
+                        {copied === link.shareUrl ? '✓ Copied' : 'Copy'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input readOnly value={link.shareUrl} className="flex-1 bg-transparent text-xs text-ink-300 font-mono outline-none truncate" />
-                    <button
-                      onClick={() => handleCopy(link.shareUrl)}
-                      className={`text-xs px-2 py-1 rounded flex-shrink-0 transition-colors ${
-                        copied === link.shareUrl ? 'bg-emerald-800 text-emerald-300' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                      }`}
-                    >
-                      {copied === link.shareUrl ? 'Copied!' : 'Copy'}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
-          <div className="flex gap-3">
-            <button onClick={onClose} className="btn-secondary flex-1 justify-center">Close</button>
-            <button onClick={handleGenerate} disabled={loading} className="btn-primary flex-1 justify-center">
-              {loading ? 'Generating...' : shareLinks.length ? 'Regenerate' : 'Generate Links'}
-            </button>
-          </div>
+          <button onClick={onClose} className="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white rounded-lg py-2 text-sm transition-colors">
+            Close
+          </button>
         </div>
       </div>
     </div>
