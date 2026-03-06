@@ -28,7 +28,8 @@ const ShareModal: React.FC<Props> = ({ doc, onClose, onShared }) => {
     try {
       const res = await api.post(`/api/docs/${doc._id}/share`, { expiryDays })
       setShareLinks(res.data.shareLinks || [])
-      onShared(res.data.doc)
+      // Don't close modal - just update parent 
+      if (res.data.doc) onShared(res.data.doc)
       toast.success('Share links generated!')
     } catch {
       toast.error('Failed to generate links')
