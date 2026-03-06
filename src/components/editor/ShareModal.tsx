@@ -45,7 +45,7 @@ const ShareModal: React.FC<Props> = ({ doc, onClose, onShared }) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="card w-full max-w-lg animate-fade-up">
+      <div className="card w-full max-w-lg animate-fade-up max-h-screen overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-display text-white">Share for Signing</h2>
