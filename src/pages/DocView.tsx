@@ -202,8 +202,8 @@ const DocView: React.FC = () => {
           )}
 
           <div
-            ref={pdfRef}
-            className={`relative bg-white rounded-xl shadow-2xl overflow-hidden ${placing ? 'cursor-crosshair' : ''}`}
+  ref={pdfRef}
+  className={`relative bg-white rounded-xl shadow-2xl overflow-hidden w-full max-w-3xl ${placing ? 'cursor-crosshair' : ''}`}
             onClick={handlePdfClick}
           >
             <PDFDocument
