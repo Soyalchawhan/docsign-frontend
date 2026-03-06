@@ -324,7 +324,7 @@ const DocView: React.FC = () => {
         <ShareModal
           doc={doc}
           onClose={() => setShowShareModal(false)}
-          onShared={updatedDoc => { setDoc(updatedDoc); setShowShareModal(false) }}
+          onShared={updatedDoc => { setDoc(updatedDoc) }}
         />
       )}
     </div>
