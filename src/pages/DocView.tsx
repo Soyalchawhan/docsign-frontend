@@ -213,7 +213,7 @@ const DocView: React.FC = () => {
             >
               <Page
                 pageNumber={currentPage}
-                width={Math.min(window.innerWidth - 450, 800)}
+                width={Math.min(window.innerWidth - 500, 800)}
                 onLoadSuccess={page => setPdfWidth(page.originalWidth > 700 ? 700 : page.originalWidth)}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
