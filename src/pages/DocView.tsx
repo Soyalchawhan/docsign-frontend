@@ -221,31 +221,58 @@ const DocView: React.FC = () => {
             </PDFDocument>
 
             {/* Signature overlays */}
-            {signatures.filter(s => s.page === currentPage).map(sig => (
-              <div
-                key={sig._id}
-                style={{ left: `${sig.x}%`, top: `${sig.y}%`, width: `${sig.width}%`, height: `${sig.height}%` }}
-                className={`absolute border-2 rounded flex flex-col justify-between p-1 pointer-events-none ${
-                  sig.status === 'signed' ? 'border-emerald-400 bg-emerald-50/90' :
-                  sig.status === 'rejected' ? 'border-red-400 bg-red-50/90' :
-                  'border-blue-400 bg-blue-50/90 border-dashed'
-                }`}
-              >
-                {sig.status === 'signed' && sig.signatureText ? (
-                  <p className="text-blue-800 font-bold text-xs italic truncate">{sig.signatureText}</p>
-                ) : (
-                  <p className="text-blue-600 text-xs font-medium truncate">Sign here</p>
-                )}
-                <div className="text-[9px] leading-tight">
-                  <p className="text-gray-700 font-medium truncate">{sig.signerName}</p>
-                  {sig.signerRole && <p className="text-gray-500 truncate">{sig.signerRole}</p>}
-                  {sig.status === 'signed' && sig.signedAt && (
-                    <p className="text-gray-400 truncate">{new Date(sig.signedAt).toLocaleDateString()}</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+{signatures.filter(s => s.page === currentPage).map(sig => (
+  <div
+    key={sig._id}
+    style={{ left: `${sig.x}%`, top: `${sig.y}%`, width: `${sig.width}%`, height: `${sig.height}%`, position: 'absolute', cursor: 'move' }}
+    className={`border-2 rounded flex flex-col justify-between p-1 select-none ${
+      sig.status === 'signed' ? 'border-emerald-400 bg-emerald-50/90' :
+      sig.status === 'rejected' ? 'border-red-400 bg-red-50/90' :
+      'border-blue-400 bg-blue-50/90 border-dashed'
+    }`}
+    onMouseDown={e => {
+      if (sig.status !== 'placed') return
+      e.preventDefault()
+      const startX = e.clientX
+      const startY = e.clientY
+      const startLeft = sig.x
+      const startTop = sig.y
+      const rect = pdfRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const onMove = (me: MouseEvent) => {
+        const dx = ((me.clientX - startX) / rect.width) * 100
+        const dy = ((me.clientY - startY) / rect.height) * 100
+        setSignatures(prev => prev.map(s => s._id === sig._id ? {...s, x: Math.max(0, Math.min(80, startLeft + dx)), y: Math.max(0, Math.min(90, startTop + dy))} : s))
+      }
+      const onUp = async (me: MouseEvent) => {
+        document.removeEventListener('mousemove', onMove)
+        document.removeEventListener('mouseup', onUp)
+        const dx = ((me.clientX - startX) / rect.width) * 100
+        const dy = ((me.clientY - startY) / rect.height) * 100
+        const newX = Math.max(0, Math.min(80, startLeft + dx))
+        const newY = Math.max(0, Math.min(90, startTop + dy))
+        try {
+          await api.patch(`/api/signatures/${sig._id}`, { x: newX, y: newY })
+        } catch { toast.error('Failed to save position') }
+      }
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseup', onUp)
+    }}
+  >
+    {sig.status === 'signed' && sig.signatureText ? (
+      <p className="text-blue-800 font-bold text-xs italic truncate">{sig.signatureText}</p>
+    ) : (
+      <p className="text-blue-600 text-xs font-medium truncate">Sign here</p>
+    )}
+    <div className="text-[9px] leading-tight">
+      <p className="text-gray-700 font-medium truncate">{sig.signerName}</p>
+      {sig.signerRole && <p className="text-gray-500 truncate">{sig.signerRole}</p>}
+      {sig.status === 'signed' && sig.signedAt && (
+        <p className="text-gray-400 truncate">{new Date(sig.signedAt).toLocaleDateString()}</p>
+      )}
+    </div>
+  </div>
+))}
 
           {/* Page navigation */}
           {numPages > 1 && (
