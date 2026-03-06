@@ -220,29 +220,28 @@ const DocView: React.FC = () => {
               />
             </PDFDocument>
 
-            {/* Signature overlays */}
+           {/* Signature overlays */}
 {signatures.filter(s => s.page === currentPage).map(sig => (
   <div
     key={sig._id}
-    style={{ left: `${sig.x}%`, top: `${sig.y}%`, width: `${sig.width}%`, height: `${sig.height}%`, position: 'absolute', cursor: 'move' }}
+    style={{ left: `${sig.x}%`, top: `${sig.y}%`, width: `${sig.width}%`, height: `${sig.height}%`, position: 'absolute', cursor: sig.status === 'placed' ? 'move' : 'default' }}
     className={`border-2 rounded flex flex-col justify-between p-1 select-none ${
       sig.status === 'signed' ? 'border-emerald-400 bg-emerald-50/90' :
       sig.status === 'rejected' ? 'border-red-400 bg-red-50/90' :
       'border-blue-400 bg-blue-50/90 border-dashed'
     }`}
-    onMouseDown={e => {
-      if (sig.status !== 'placed') return
+    onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
+      if (sig.status !== 'placed' || !pdfRef.current) return
       e.preventDefault()
       const startX = e.clientX
       const startY = e.clientY
       const startLeft = sig.x
       const startTop = sig.y
-      const rect = pdfRef.current?.getBoundingClientRect()
-      if (!rect) return
+      const rect = pdfRef.current.getBoundingClientRect()
       const onMove = (me: MouseEvent) => {
         const dx = ((me.clientX - startX) / rect.width) * 100
         const dy = ((me.clientY - startY) / rect.height) * 100
-        setSignatures(prev => prev.map(s => s._id === sig._id ? {...s, x: Math.max(0, Math.min(80, startLeft + dx)), y: Math.max(0, Math.min(90, startTop + dy))} : s))
+        setSignatures((prev: Signature[]) => prev.map((s: Signature) => s._id === sig._id ? {...s, x: Math.max(0, Math.min(80, startLeft + dx)), y: Math.max(0, Math.min(90, startTop + dy))} : s))
       }
       const onUp = async (me: MouseEvent) => {
         document.removeEventListener('mousemove', onMove)
