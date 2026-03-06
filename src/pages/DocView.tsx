@@ -171,7 +171,7 @@ const DocView: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
         {/* PDF Viewer */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col items-center">
           {/* Signer selector when placing */}
           {placing && (
             <div className="card p-4 mb-4 animate-fade-in">
@@ -269,7 +269,7 @@ const DocView: React.FC = () => {
                     signer.status === 'signed' ? 'bg-emerald-400' :
                     signer.status === 'rejected' ? 'bg-red-400' : 'bg-amber-400'
                   }`} />
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 flex flex-col items-center">
                     <p className="text-slate-200 font-medium truncate">{signer.name}</p>
                     {signer.role && <p className="text-ink-400 truncate text-[11px]">{signer.role}</p>}
                     <p className="text-slate-500 truncate">{signer.email}</p>
