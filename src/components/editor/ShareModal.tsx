@@ -3,6 +3,14 @@ import { toast } from 'react-toastify'
 import api from '../../utils/api'
 import { Document } from '../../utils/types'
 
+interface ShareLink {
+  name: string
+  email: string
+  role: string
+  shareUrl: string
+  status: string
+}
+
 interface Props {
   doc: Document
   onClose: () => void
@@ -10,37 +18,34 @@ interface Props {
 }
 
 const ShareModal: React.FC<Props> = ({ doc, onClose, onShared }) => {
-  const [signerName, setSignerName] = useState(doc.signerName || '')
-  const [signerEmail, setSignerEmail] = useState(doc.signerEmail || '')
   const [expiryDays, setExpiryDays] = useState(7)
   const [loading, setLoading] = useState(false)
-  const [shareUrl, setShareUrl] = useState(doc.shareToken ? `${window.location.origin}/sign/${doc.shareToken}` : '')
-  const [copied, setCopied] = useState(false)
+  const [shareLinks, setShareLinks] = useState<ShareLink[]>([])
+  const [copied, setCopied] = useState<string | null>(null)
 
   const handleGenerate = async () => {
-    if (!signerEmail) { toast.error('Signer email required'); return }
     setLoading(true)
     try {
-      const res = await api.post(`/api/docs/${doc._id}/share`, { signerName, signerEmail, expiryDays })
-      setShareUrl(res.data.shareUrl)
+      const res = await api.post(`/api/docs/${doc._id}/share`, { expiryDays })
+      setShareLinks(res.data.shareLinks)
       onShared(res.data.doc)
-      toast.success('Share link generated!')
+      toast.success('Share links generated!')
     } catch {
-      toast.error('Failed to generate link')
+      toast.error('Failed to generate links')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopy = (url: string) => {
+    navigator.clipboard.writeText(url)
+    setCopied(url)
+    setTimeout(() => setCopied(null), 2000)
   }
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="card w-full max-w-md animate-fade-up">
+      <div className="card w-full max-w-lg animate-fade-up">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-display text-white">Share for Signing</h2>
@@ -51,68 +56,72 @@ const ShareModal: React.FC<Props> = ({ doc, onClose, onShared }) => {
             </button>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="label">Signer name</label>
-              <input
-                value={signerName}
-                onChange={e => setSignerName(e.target.value)}
-                type="text"
-                placeholder="Bob Smith"
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Signer email <span className="text-red-400">*</span></label>
-              <input
-                value={signerEmail}
-                onChange={e => setSignerEmail(e.target.value)}
-                type="email"
-                placeholder="bob@company.com"
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Link expires in</label>
-              <select
-                value={expiryDays}
-                onChange={e => setExpiryDays(Number(e.target.value))}
-                className="input"
-              >
-                <option value={1}>1 day</option>
-                <option value={3}>3 days</option>
-                <option value={7}>7 days</option>
-                <option value={14}>14 days</option>
-                <option value={30}>30 days</option>
-              </select>
-            </div>
-
-            {shareUrl && (
-              <div className="bg-slate-950 border border-slate-700 rounded-lg p-3 animate-fade-in">
-                <p className="text-xs text-slate-400 mb-2">Share link (expires in {expiryDays} days)</p>
-                <div className="flex items-center gap-2">
-                  <input
-                    readOnly
-                    value={shareUrl}
-                    className="flex-1 bg-transparent text-sm text-ink-300 font-mono outline-none truncate"
-                  />
-                  <button
-                    onClick={handleCopy}
-                    className={`text-xs px-2 py-1 rounded transition-colors ${
-                      copied ? 'bg-emerald-800 text-emerald-300' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    {copied ? 'Copied!' : 'Copy'}
-                  </button>
+          {/* Signers list */}
+          <div className="mb-4">
+            <p className="text-sm text-slate-400 mb-3">Signers ({doc.signers?.length || 0})</p>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {doc.signers?.map((signer, i) => (
+                <div key={i} className="flex items-center gap-2 bg-slate-900 rounded-lg p-2.5">
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    signer.status === 'signed' ? 'bg-emerald-400' :
+                    signer.status === 'rejected' ? 'bg-red-400' : 'bg-amber-400'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white truncate">{signer.name}</p>
+                    <p className="text-xs text-slate-400 truncate">{signer.email}{signer.role ? ` · ${signer.role}` : ''}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    signer.status === 'signed' ? 'bg-emerald-900/50 text-emerald-400' :
+                    signer.status === 'rejected' ? 'bg-red-900/50 text-red-400' :
+                    'bg-amber-900/50 text-amber-400'
+                  }`}>{signer.status}</span>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
 
-          <div className="flex gap-3 mt-6">
+          {/* Expiry */}
+          <div className="mb-4">
+            <label className="label">Link expires in</label>
+            <select value={expiryDays} onChange={e => setExpiryDays(Number(e.target.value))} className="input">
+              <option value={1}>1 day</option>
+              <option value={3}>3 days</option>
+              <option value={7}>7 days</option>
+              <option value={14}>14 days</option>
+              <option value={30}>30 days</option>
+            </select>
+          </div>
+
+          {/* Generated links */}
+          {shareLinks.length > 0 && (
+            <div className="space-y-2 mb-4">
+              <p className="text-xs text-slate-400">Share links — send each link to the respective signer:</p>
+              {shareLinks.map((link, i) => (
+                <div key={i} className="bg-slate-950 border border-slate-700 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-white">{link.name}</span>
+                    {link.role && <span className="text-xs text-slate-400">{link.role}</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input readOnly value={link.shareUrl} className="flex-1 bg-transparent text-xs text-ink-300 font-mono outline-none truncate" />
+                    <button
+                      onClick={() => handleCopy(link.shareUrl)}
+                      className={`text-xs px-2 py-1 rounded flex-shrink-0 transition-colors ${
+                        copied === link.shareUrl ? 'bg-emerald-800 text-emerald-300' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      {copied === link.shareUrl ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-3">
             <button onClick={onClose} className="btn-secondary flex-1 justify-center">Close</button>
             <button onClick={handleGenerate} disabled={loading} className="btn-primary flex-1 justify-center">
-              {loading ? 'Generating...' : shareUrl ? 'Regenerate' : 'Generate Link'}
+              {loading ? 'Generating...' : shareLinks.length ? 'Regenerate' : 'Generate Links'}
             </button>
           </div>
         </div>
